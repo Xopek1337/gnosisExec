@@ -24,90 +24,67 @@ describe('Market for ERC721s NFT tests', () => {
     const gnosisInstance = await ethers.getContractFactory('GnosisSafe');
     gnosisFactory = await proxyFactotyInstance.deploy();
     gnosis = await gnosisInstance.deploy(); 
+    
     const callData = gnosis.interface; 
     const cd = callData.encodeFunctionData('setup', [[accounts[0].address, accounts[1].address, accounts[2].address], 3, ZERO_ADDRESS, '0x', ZERO_ADDRESS, ZERO_ADDRESS, 0, ZERO_ADDRESS]);
     const gg = await gnosisFactory.createProxy(gnosis.address, cd);
     const res = await gg.wait();
+
     console.log(res.events[1]);
     proxyAddr = res.events[1].args.proxy;
     gnosisProxy = gnosisInstance.attach(proxyAddr);
+
+    sign1 = await sign(proxyAddr, accounts[0].address, 0, '0x', 0, 0, 0, 0, 0, accounts[0].address, 0, accounts[0]);
+    console.log(sign1);
   });
 
-  it('should deposit and withdraw 1 ETH', async () => {
+  it('test ', async () => {
     const lol = await gnosisProxy.getThreshold();
     
-    console.log(lol);
+    
   });
 });
 
-async function signRent(_token, _payToken, tokenId, rentTime, price, nonce, deadline, signer) {
+async function sign(proxy, to, value, data, operation, safeTxGas, baseGas, gasPrice, gasToken, refundReceiver, nonce, signer) {
   const typedData = {
     types: {
-      Rent: [
-        { name: '_token', type: 'address' },
-        { name: '_payToken', type: 'address' },
-        { name: 'tokenId', type: 'uint256' },
-        { name: 'rentTime', type: 'uint256' },
-        { name: 'price', type: 'uint256' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
+      SafeTx: [
+        { type: "address", name: "to" },
+        { type: "uint256", name: "value" },
+        { type: "bytes", name: "data" },
+        { type: "uint8", name: "operation" },
+        { type: "uint256", name: "safeTxGas" },
+        { type: "uint256", name: "baseGas" },
+        { type: "uint256", name: "gasPrice" },
+        { type: "address", name: "gasToken" },
+        { type: "address", name: "refundReceiver" },
+        { type: "uint256", name: "nonce" },
       ],
     },
-    primaryType: 'Rent',
+    primaryType: 'SafeTx',
     domain: {
-      name: "NFTMarketplaceV2",
+      name: "GnosisSafe",
       version: '1',
       chainId: chainId,
-      verifyingContract: Market.address,
+      verifyingContract: proxy,
     },
     message: {
-      _token,
-      _payToken,
-      tokenId,
-      rentTime,
-      price,
-      nonce,
-      deadline,
+      to,
+      value,
+      data,
+      operation,
+      safeTxGas,
+      baseGas,
+      gasPrice,
+      gasToken,
+      refundReceiver,
+      nonce
     },
   };
   
   const signature = await signer._signTypedData(
     typedData.domain,
-    { Rent: typedData.types.Rent },
-    typedData.message,
-  );
-  
-  return signature;
-}
-
-async function signPermit(signer, spender, nonce, deadline, holder) {
-  const typedData = {
-    types: {
-      PermitAll: [
-        { name: 'signer', type: 'address' },
-        { name: 'spender', type: 'address' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
-      ],
-    },
-    primaryType: 'PermitAll',
-    domain: {
-      name: "MockNFT",
-      version: '1',
-      chainId: chainId,
-      verifyingContract: LockNFT.address,
-    },
-    message: {
-      signer,
-      spender,
-      nonce,
-      deadline,
-    },
-  };
-  
-  const signature = await holder._signTypedData(
-    typedData.domain,
-    { PermitAll: typedData.types.PermitAll },
+    { SafeTx: typedData.types.SafeTx },
     typedData.message,
   );
   
